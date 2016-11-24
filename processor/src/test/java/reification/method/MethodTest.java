@@ -355,6 +355,31 @@ public class MethodTest {
 		assertCompilesAndGenerates(X, X$String);
 	}
 	
+	@Test
+	public void classMethodOfInterfaceType() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(CharSequence.class) T> {",
+						"    Class<T> classT();                     ",
+						"}                                          "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$CharSequence",
+				lines(
+						"public interface X$CharSequence extends X<CharSequence> {",
+						"    @Override                                            ",
+						"    default Class<CharSequence> classT() {               ",
+						"        return CharSequence.class;                       ",
+						"    }                                                    ",
+						"}                                                        "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
 	/* NEW INSTANCE METHOD */
 	
 	@Test
@@ -496,6 +521,19 @@ public class MethodTest {
 	}
 	
 	@Test
+	public void newInstanceMethodOfInterfaceType() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(CharSequence.class) T> {",
+						"    T newT();                              ",
+						"}                                          "
+				)
+		);
+		assertAboutProcessedSourceThat(X).failsToCompile().withErrorContaining("Could not resolve constructor");
+	}
+	
+	@Test
 	public void newInstanceMethodWithExceptions() {
 		JavaFileObject U = inputSource(
 				"U",
@@ -529,8 +567,6 @@ public class MethodTest {
 		
 		assertCompilesAndGenerates(Arrays.asList(U, X), X$String);
 	}
-	
-	// TODO Constructor throwing exception...
 	
 	@Test
 	public void classAndMultipleNewInstanceMethods() {
