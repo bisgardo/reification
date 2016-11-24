@@ -11,9 +11,9 @@ public class SinglePrimitiveTypeTest {
 	@Test
 	public void classWithSingleInt() {
 		JavaFileObject X = inputSource("X", "class X<@Reify(int.class) T> {}");
-		assertAboutSourceThat(X)
+		assertAboutProcessedSourceThat(X)
 				.failsToCompile()
 				.withErrorCount(1)
-				.withErrorContaining("not yet implemented");
+				.withErrorContaining(Message.NOT_YET_IMPLEMENTED);
 	}
 }

@@ -4,17 +4,16 @@ import org.junit.Test;
 
 import javax.tools.JavaFileObject;
 
-import static reification.TestFunctions.assertAboutSourceThat;
-import static reification.TestFunctions.inputSource;
+import static reification.TestFunctions.*;
 
 public class FinalClassTest {
 	
 	@Test
 	public void singleReferenceTypeParameter() {
 		JavaFileObject X = inputSource("X", "final class X<@Reify(String.class) T> {}");
-		assertAboutSourceThat(X)
+		assertAboutProcessedSourceThat(X)
 				.failsToCompile()
 				.withErrorCount(1)
-				.withErrorContaining("not yet implemented");
+				.withErrorContaining(Message.NOT_YET_IMPLEMENTED);
 	}
 }

@@ -5,6 +5,7 @@ import org.junit.Test;
 import javax.tools.JavaFileObject;
 
 import static reification.TestFunctions.*;
+import static reification.TestHelper.*;
 
 public class SingleReferenceTypeTest {
 	
