@@ -32,4 +32,16 @@ public class TestFunctions {
 	public static JavaFileObject generatedSource(String fullyQualifiedName, String source) {
 		return JavaFileObjects.forSourceString("/SOURCE_OUTPUT/" + fullyQualifiedName, source);
 	}
+	
+	public static String lines(String... remainingSourceLines) {
+		StringBuilder stringBuilder = new StringBuilder();
+		for (String sourceLine : remainingSourceLines) {
+			if (stringBuilder.length() > 0) {
+				stringBuilder.append('\n');
+			}
+			stringBuilder.append(sourceLine);
+		}
+		
+		return stringBuilder.toString();
+	}
 }

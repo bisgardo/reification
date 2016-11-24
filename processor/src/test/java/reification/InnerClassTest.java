@@ -12,12 +12,14 @@ public class InnerClassTest {
 	@Test
 	public void reifiedClassWithNonStaticInnerClass() {
 		JavaFileObject X = inputSource("X", "class X<@Reify(String.class) T1> { class Y<T2> {} }");
+		// TODO Generates file?!?
 		assertCompiles(X);
 	}
 	
 	@Test
 	public void reifiedClassWithStaticInnerClass() {
 		JavaFileObject X = inputSource("X", "class X<@Reify(String.class) T1> { static class Y<T2> {} }");
+		// TODO Generates file?!?
 		assertCompiles(X);
 	}
 	

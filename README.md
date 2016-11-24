@@ -9,15 +9,16 @@ of the type that the annotated type variable should be reified with. When the pr
 type parameters, it will generate new types for each combination of reified type parameters as described in the next
 section.
 
-The processor furthermore [doesn't yet] supports auto-implementation of the followingly named [and/or suitably annotated]
-abstract methods, if they are present:
+The generated types are always `public` and contained in their very own source file.
+
+The processor [doesn't yet] supports auto-implementation of the followingly named [and/or suitably annotated] abstract
+methods, if they are present:
 
 *   `T newT(? arg_1, ..., ? arg_n)`: Create a new instance of the reified type `T` by passing the (arbitrarily typed)
-    parameters `arg_1` through `arg_n` to a suitable constructor of `T`.
+    parameters `arg_1` through `arg_n` to a suitable constructor of `T`. [TODO The method only declares throwing the
+    exceptions that the constructor declares to throw.]
 
 *   `T classT()`: Return the `Class`-object for the reified type `T`.
-
-Checking that type parameters are instantiated by valid types only is left as an exercise to the compiler.
 
 ## Limitations
 
@@ -26,17 +27,21 @@ non-local classes at some later time.
 
 The current implementation is also quite incomplete, and the following features haven't been implemented yet:
 
-* Reification of type parameters on static inner classes.
+*   Reification of type parameters on static inner classes.
 
-* Reification of type parameters on final classes.
+*   Reification of type parameters on final classes.
 
-* Reification of type that defines more than one type parameter.
+*   Reification of type that defines more than one type parameter.
 
-* Reification of primitive types.
+*   Reification of primitive types.
 
-* Auto-implementation of methods.
+*   Auto-implementation of methods.
 
 All these constraints are intended to be lifted later on and other features may be added as well.
+
+Also, for now, checking that type parameters are instantiated by types within required bounds only is left as an
+exercise to the compiler. The same thing goes with ensuring that method declarations (in particular, return types and
+`throws`-declarations) of auto-implemented methods are consistent with the ones that they override.
 
 ## Examples
 
@@ -59,3 +64,10 @@ If `X` contains abstract methods, then `X$String` will be abstract. If `X` were 
 be.
 
 The generated class will reside in the same package as the input class. 
+
+## Future ideas
+
+Other than lifting the limitations described and otherwise hinted above, the following list of ideas might be
+investigated:
+
+*   [TODO Get some ideas!]
