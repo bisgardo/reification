@@ -1,8 +1,6 @@
 package reification;
 
-import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 
@@ -16,33 +14,34 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static javax.lang.model.element.ElementKind.METHOD;
 import static javax.lang.model.element.Modifier.*;
 import static javax.lang.model.type.TypeKind.DECLARED;
-import static javax.tools.Diagnostic.Kind.*;
+import static javax.tools.Diagnostic.Kind.ERROR;
+import static javax.tools.Diagnostic.Kind.NOTE;
 
 public class ReificationProcessor extends AbstractProcessor {
-	private static final String NEW_INSTANCE_METHOD_NAME = "newInstance";
-	private static final String CLASS_DESCRIPTOR_METHOD_NAME = "classDescriptor";
 	
-	private Types typeUtils;
 	private Elements elementUtils;
 	private Filer filer;
 	private Messager messager;
+	
+	private SourceGenerator sourceGenerator;
 	
 	@Override
 	public synchronized void init(ProcessingEnvironment environment) {
 		super.init(environment);
 		
-		typeUtils = environment.getTypeUtils();
+		Types typeUtils = environment.getTypeUtils();
+		
 		elementUtils = environment.getElementUtils();
 		filer = environment.getFiler();
 		messager = environment.getMessager();
+		
+		sourceGenerator = new SourceGenerator(typeUtils, messager);
 		
 		messager.printMessage(NOTE, "Initializing '@reification.Reify'-annotation processor");
 	}
@@ -79,7 +78,7 @@ public class ReificationProcessor extends AbstractProcessor {
 					
 					if (typeElement.equals(enclosingElement)) {
 						process(typeElement);
-					} else if (enclosingElements(enclosingElement).contains(typeElement)) {
+					} else if (ElementFunctions.enclosingElements(enclosingElement).contains(typeElement)) {
 						if (enclosingElement.getModifiers().contains(STATIC)) {
 							messager.printMessage(
 									ERROR,
@@ -108,15 +107,6 @@ public class ReificationProcessor extends AbstractProcessor {
 		}
 		
 		return true;
-	}
-	
-	private static List<Element> enclosingElements(Element typeElement) {
-		ArrayList<Element> enclosingElements = new ArrayList<>();
-		while (typeElement != null) {
-			enclosingElements.add(typeElement);
-			typeElement = typeElement.getEnclosingElement();
-		}
-		return enclosingElements;
 	}
 	
 	private void process(ClassSymbol typeElement) {
@@ -230,13 +220,14 @@ public class ReificationProcessor extends AbstractProcessor {
 		String typeArgumentName = typeArgumentMirror.asElement().getSimpleName().toString();
 		String generatedClassName = typeName + '$' + typeArgumentName;
 		
-		TypeSpec.Builder javaFileBuilder = generateSource(
+		TypeSpec.Builder javaFileBuilder = sourceGenerator.generateSource(
 				typeElement,
 				typeArgumentMirror,
 				generatedClassName,
 				typeElement
 		);
 		if (javaFileBuilder == null) {
+			// Error has been reported to `messager` from within `sourceGenerator`.
 			return;
 		}
 		
@@ -257,136 +248,6 @@ public class ReificationProcessor extends AbstractProcessor {
 		} catch (IOException e) {
 			messager.printMessage(ERROR, e.getMessage());
 		}
-	}
-	
-	private TypeSpec.Builder generateSource(
-			TypeElement superTypeElement,
-			DeclaredType typeArgument,
-			String generatedClassName,
-			TypeElement classElement
-	) {
-		List<ExecutableElement> abstractMethods = new ArrayList<>();
-		if (!recursivelyAddAbstractMethods(superTypeElement, abstractMethods)) {
-			return null;
-		}
-		
-		boolean unimplementedAbstractMethods = false;
-		for (ExecutableElement abstractMethod : abstractMethods) {
-			String name = abstractMethod.getSimpleName().toString();
-			switch (name) {
-				case NEW_INSTANCE_METHOD_NAME:
-					messager.printMessage(
-							WARNING,
-							String.format(
-									"Auto-implementation of abstract method '%s' is not yet implemented",
-									NEW_INSTANCE_METHOD_NAME
-							),
-							classElement
-					);
-					unimplementedAbstractMethods = true;
-					continue;
-				case CLASS_DESCRIPTOR_METHOD_NAME:
-					messager.printMessage(
-							WARNING,
-							String.format(
-									"Auto-implementation of abstract method '%s' is not yet implemented",
-									CLASS_DESCRIPTOR_METHOD_NAME
-							),
-							classElement
-					);
-					unimplementedAbstractMethods = true;
-					continue;
-			}
-			unimplementedAbstractMethods = true;
-		}
-		
-		// Build reified type.
-		ParameterizedTypeName reifiedSuperType = ParameterizedTypeName.get(
-				ClassName.get(superTypeElement),
-				ClassName.get(typeArgument)
-		);
-		
-		ElementKind kind = superTypeElement.getKind();
-		TypeSpec.Builder typeBuilder;
-		if (kind.isClass()) {
-			typeBuilder = TypeSpec.classBuilder(generatedClassName).superclass(reifiedSuperType);
-			if (unimplementedAbstractMethods) {
-				typeBuilder.addModifiers(ABSTRACT);
-			}
-		} else if (kind.isInterface()) {
-			typeBuilder = TypeSpec.interfaceBuilder(generatedClassName).addSuperinterface(reifiedSuperType);
-		} else {
-			messager.printMessage(
-					ERROR,
-					String.format(
-							"Expected type '%s' of kind '%s' to be either a class or an interface",
-							superTypeElement,
-							kind
-					),
-					superTypeElement
-			);
-			return null;
-		}
-		
-		// TODO Add auto-implemented abstract methods.
-		
-		return typeBuilder;
-	}
-	
-	private boolean recursivelyAddAbstractMethods(TypeElement typeElement, List<ExecutableElement> abstractMethods) {
-		List<? extends TypeMirror> interfaceTypes = typeElement.getInterfaces();
-		TypeMirror superclassType = typeElement.getSuperclass();
-		
-		// Order or recursion prevents non-abstract methods from being "re-registered" as abstract ones (by removing 
-		// them from the result list).
-		for (TypeMirror interfaceType : interfaceTypes) {
-			Element interfaceElement = typeUtils.asElement(interfaceType);
-			ElementKind kind = interfaceElement.getKind();
-			if (!kind.isInterface()) {
-				messager.printMessage(
-						ERROR,
-						String.format("Expected type '%s' of kind '%s' to have kind 'INTERFACE'", typeElement, kind),
-						typeElement
-				);
-				return false;
-			}
-			TypeElement interfaceTypeElement = (TypeElement) interfaceElement;
-			if (!recursivelyAddAbstractMethods(interfaceTypeElement, abstractMethods)) {
-				return false;
-			}
-		}
-		Element superclassElement = typeUtils.asElement(superclassType);
-		if (superclassElement != null) {
-			ElementKind kind = superclassElement.getKind();
-			if (!kind.isClass()) {
-				messager.printMessage(
-						ERROR,
-						String.format("Expected type '%s' of kind '%s' to have kind 'CLASS'", superclassElement, kind),
-						superclassElement
-				);
-				return false;
-			}
-			TypeElement superClassTypeElement = (TypeElement) superclassElement;
-			if (!recursivelyAddAbstractMethods(superClassTypeElement, abstractMethods)) {
-				return false;
-			}
-		}
-		
-		List<? extends Element> memberElements = typeElement.getEnclosedElements();
-		for (Element memberElement : memberElements) {
-			if (memberElement.getKind() != METHOD) {
-				continue;
-			}
-			
-			ExecutableElement methodElement = (ExecutableElement) memberElement;
-			Set<Modifier> modifiers = methodElement.getModifiers();
-			if (modifiers.contains(ABSTRACT)) {
-				abstractMethods.add(methodElement);
-			} else {
-				abstractMethods.remove(methodElement);
-			} 
-		}
-		return true;
 	}
 	
 	@Override

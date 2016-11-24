@@ -14,9 +14,9 @@ combination of reified type parameters as described in the next section.
 
 The processor furthermore [doesn't yet] supports auto-implementation of
 the followingly named [or suitably annotated] abstract methods, if they
-are present
+are present:
 
-* T `newT(? arg_1, ..., ? arg_n)`: Create new instance of
+* `T newT(? arg_1, ..., ? arg_n)`: Create new instance of
   reified type `T` by passing the (arbitrarily typed) parameters `arg_1`
   through `arg_n` to a suitable constructor of `T`.
 
@@ -33,7 +33,7 @@ features haven't been implemented yet:
 
 * Reification of type parameters on final classes.
 
-* Reification when there is more than one type parameter on a class.
+* Reification of type that defines more than one type parameter.
 
 * Reification of primitive types.
 
@@ -47,7 +47,7 @@ features may be added as well.
 By deciding to list only examples that will work on the currently
 implemented features, the list can be both exhaustive and short: The
 only feature listed above that actually works is reification of a single,
-non-primitive type variable of a top-level class.
+non-primitive type variable of a top-level class or interface:
 
 The annotation processor deals with the class
 
@@ -61,4 +61,4 @@ by generating the class
     }
 
 If `X` contains abstract methods, then `X$String` will be abstract. If
-`X` is an interface, then so is `X$String`.
+`X` were an interface, then so would `X$String` be.
