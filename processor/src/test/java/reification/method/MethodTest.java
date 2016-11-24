@@ -1,8 +1,10 @@
-package reification;
+package reification.method;
 
 import org.junit.Test;
 
 import javax.tools.JavaFileObject;
+
+import java.util.Arrays;
 
 import static reification.TestFunctions.*;
 import static reification.TestHelper.assertCompilesAndGenerates;
@@ -19,6 +21,128 @@ public class MethodTest {
 						"abstract class X<@Reify(String.class) T> {",
 						"    abstract Class<T> classT();           ",
 						"}                                         "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public class X$String extends X<String> {",
+						"    @Override                            ",
+						"    Class<String> classT() {             ",
+						"        return String.class;             ",
+						"    }                                    ",
+						"}                                        "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
+	public void nonClassMethodOnClass() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"abstract class X<@Reify(String.class) T> {",
+						"    abstract Class<T> classR();           ",
+						"}                                         "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public abstract class X$String extends X<String> {",
+						"}                                                 "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
+	public void classMethodWithTypeParameter() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"abstract class X<@Reify(String.class) T> {",
+						"    abstract <R> Class<R> classT();       ",
+						"}                                         "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public class X$String extends X<String> {",
+						"    @Override                            ",
+						"    Class<String> classT() {             ",
+						"        return String.class;             ",
+						"    }                                    ",
+						"}                                        "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
+	public void classMethodWithShadowingTypeParameter() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"abstract class X<@Reify(String.class) T> {",
+						"    abstract <T> Class<T> classT();       ",
+						"}                                         "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public class X$String extends X<String> {",
+						"    @Override                            ",
+						"    Class<String> classT() {             ",
+						"        return String.class;             ",
+						"    }                                    ",
+						"}                                        "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
+	public void classMethodWithShadowingTypeParameterWithinBounds() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"abstract class X<@Reify(String.class) T> {        ",
+						"    abstract <T extends String> Class<T> classT();",
+						"}                                                 "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public class X$String extends X<String> {",
+						"    @Override                            ",
+						"    Class<String> classT() {             ",
+						"        return String.class;             ",
+						"    }                                    ",
+						"}                                        "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
+	public void classMethodWithShadowingTypeParameterOutsideBounds() {
+		// Not sure why this is valid Java, but apparently it is.
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"abstract class X<@Reify(String.class) T> {         ",
+						"    abstract <T extends Integer> Class<T> classT();",
+						"}                                                  "
 				)
 		);
 		JavaFileObject X$String = generatedSource(
@@ -79,6 +203,31 @@ public class MethodTest {
 	}
 	
 	@Test
+	public void compatibleClassMethodOnInterface() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(String.class) T> {",
+						"    Object classT();                 ",
+						"}                                    "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public interface X$String extends X<String> {",
+						"    @Override                                ",
+						"    default Class<String> classT() {         ",
+						"        return String.class;                 ",
+						"    }                                        ",
+						"}                                            "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
 	public void matchingClassMethodOnInterface() {
 		JavaFileObject X = inputSource(
 				"X",
@@ -105,6 +254,20 @@ public class MethodTest {
 	
 	@Test
 	public void nonMatchingClassMethodOnInterface() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(String.class) T> {",
+						"    Integer classT();                ",
+						"}                                    "
+				)
+		);
+		assertAboutProcessedSourceThat(X)
+				.failsToCompile();
+	}
+	
+	@Test
+	public void nonMatchingGenericClassMethodOnInterface() {
 		JavaFileObject X = inputSource(
 				"X",
 				lines(
@@ -173,7 +336,7 @@ public class MethodTest {
 				"X",
 				lines(
 						"interface X<@Reify(String.class) T> {",
-						"    Class<? super T> classT();     ",
+						"    Class<? super T> classT();       ",
 						"}                                    "
 				)
 		);
@@ -250,7 +413,7 @@ public class MethodTest {
 				"X",
 				lines(
 						"abstract class X<@Reify(String.class) T> {               ",
-						"    abstract T newT(char value[], int offset, int count);",
+						"    abstract T newT(char[] value, int offset, int count);",
 						"}                                                        "
 				)
 		);
@@ -294,16 +457,134 @@ public class MethodTest {
 		assertCompilesAndGenerates(X, X$String);
 	}
 	
-	/* NON-ABSTRACT */
-	
 	@Test
-	public void nonAbstractClassMethodOnClassSimple() {
+	public void newInstanceMethodWithoutExceptions() {
 		JavaFileObject X = inputSource(
 				"X",
 				lines(
-						"class X<@Reify(String.class) T> {     ",
-						"    Class<T> classT() { return null; }",
-						"}                                     "
+						"interface X<@Reify(String.class) T> {",
+						"    T newT() throws Exception;       ",
+						"}                                    "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public interface X$String extends X<String> {",
+						"    @Override                                ",
+						"    default String newT() {                  ",
+						"        return new String();                 ",
+						"    }                                        ",
+						"}                                            "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	@Test
+	public void newInstanceMethodWithoutMatchingConstructor() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(String.class) T> {",
+						"    T newT(Object o);                ",
+						"}                                    "
+				)
+		);
+		assertAboutProcessedSourceThat(X).failsToCompile().withErrorContaining("Could not resolve constructor");
+	}
+	
+	@Test
+	public void newInstanceMethodWithExceptions() {
+		JavaFileObject U = inputSource(
+				"U",
+				lines(
+						"public class U {                                                              ",
+						"    U() throws java.io.IOException, RuntimeException, java.sql.SQLException {}",
+						"}                                                                             "
+				)
+		);
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(U.class) T> {",
+						"    T newT() throws Exception;  ",
+						"}                               "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$U",
+				lines(
+						"import java.io.IOException;                                              ",
+						"import java.sql.SQLException;                                            ",
+						"public interface X$U extends X<U> {                                      ",
+						"    @Override                                                            ",
+						"    default U newT() throws IOException, RuntimeException, SQLException {",
+						"        return new U();                                                  ",
+						"    }                                                                    ",
+						"}                                                                        "
+				)
+		);
+		
+		assertCompilesAndGenerates(Arrays.asList(U, X), X$String);
+	}
+	
+	// TODO Constructor throwing exception...
+	
+	@Test
+	public void classAndMultipleNewInstanceMethods() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"interface X<@Reify(String.class) T> {",
+						"    Class<T> classT();               ",
+						"    T newT();                        ",
+						"    T newT(String s);                ",
+						"    T newT(char[] v, int o, int c);  ",
+						"}                                    "
+				)
+		);
+		JavaFileObject X$String = generatedSource(
+				"X$String",
+				lines(
+						"public interface X$String extends X<String> {    ",
+						"    @Override                                    ",
+						"    default Class<String> classT() {             ",
+						"        return String.class;                     ",
+						"    }                                            ",
+						"                                                 ",
+						"    @Override                                    ",
+						"    default String newT() {                      ",
+						"        return new String();                     ",
+						"    }                                            ",
+						"                                                 ",
+						"    @Override                                    ",
+						"    default String newT(String s) {              ",
+						"        return new String(s);                    ",
+						"    }                                            ",
+						"                                                 ",
+						"    @Override                                    ",
+						"    default String newT(char[] v, int o, int c) {",
+						"        return new String(v, o, c);              ",
+						"    }                                            ",
+						"}                                                "
+				)
+		);
+		
+		assertCompilesAndGenerates(X, X$String);
+	}
+	
+	/* NON-ABSTRACT */
+	
+	@Test
+	public void nonAbstractClassMethod() {
+		JavaFileObject X = inputSource(
+				"X",
+				lines(
+						"class X<@Reify(String.class) T> {   ",
+						"    String classT() { return null; }",
+						"}                                   "
 				)
 		);
 		JavaFileObject X$String = generatedSource(
@@ -343,9 +624,7 @@ public class MethodTest {
 	// TODO Add test with indirectly inherited abstract methods, incl.
 	//      - collisions (might not be our problem, though)
 	//      - overloading (for 'newInstance' only).
-	//      - both interface and superclass)
-	//      - matching name but not abstract
+	//      - both interface and superclass
 	//      - abstract but also implemented.
 	
-	/* BOTH METHODS */
 }

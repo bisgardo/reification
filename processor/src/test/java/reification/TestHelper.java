@@ -10,14 +10,14 @@ import static reification.TestFunctions.*;
 
 public class TestHelper {
 	
-	private final CompileTester.CleanCompilationClause assertion;
+	public final CompileTester.CleanCompilationClause assertion;
 	
 	public TestHelper(CompileTester.CleanCompilationClause assertion) {
 		this.assertion = Objects.requireNonNull(assertion);
 	}
 	
-	public void andGeneratesSources(JavaFileObject first, JavaFileObject... rest) {
-		assertion.and().generatesSources(first, rest);
+	public CompileTester.CleanCompilationClause andGeneratesSources(JavaFileObject first, JavaFileObject... rest) {
+		return assertion.and().generatesSources(first, rest);
 	}
 	
 	/* SINGLE FILE */
@@ -33,8 +33,8 @@ public class TestHelper {
 		return new TestHelper(assertion);
 	}
 	
-	public static void assertCompilesAndGenerates(JavaFileObject input, JavaFileObject firstGenerated, JavaFileObject... remainingGenerated) {
-		assertCompiles(input).andGeneratesSources(firstGenerated, remainingGenerated);
+	public static CompileTester.CleanCompilationClause assertCompilesAndGenerates(JavaFileObject input, JavaFileObject firstGenerated, JavaFileObject... remainingGenerated) {
+		return assertCompiles(input).andGeneratesSources(firstGenerated, remainingGenerated);
 	}
 	
 	/* MULTIPLE FILES */
@@ -45,7 +45,7 @@ public class TestHelper {
 		return new TestHelper(assertion);
 	}
 	
-	public static void assertCompilesAndGenerates(Iterable<JavaFileObject> inputs, JavaFileObject firstGenerated, JavaFileObject... remainingGenerated) {
-		assertCompiles(inputs).andGeneratesSources(firstGenerated, remainingGenerated);
+	public static CompileTester.CleanCompilationClause assertCompilesAndGenerates(Iterable<JavaFileObject> inputs, JavaFileObject firstGenerated, JavaFileObject... remainingGenerated) {
+		return assertCompiles(inputs).andGeneratesSources(firstGenerated, remainingGenerated);
 	}
 }
