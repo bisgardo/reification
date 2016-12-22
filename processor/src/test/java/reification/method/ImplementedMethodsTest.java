@@ -9,7 +9,7 @@ import java.util.Arrays;
 import static reification.TestFunctions.*;
 import static reification.TestHelper.assertCompilesAndGenerates;
 
-public class MethodTest {
+public class ImplementedMethodsTest {
 	
 	/* CLASS METHOD */
 	
@@ -611,56 +611,11 @@ public class MethodTest {
 		assertCompilesAndGenerates(X, X$String);
 	}
 	
-	/* NON-ABSTRACT */
-	
-	@Test
-	public void nonAbstractClassMethod() {
-		JavaFileObject X = inputSource(
-				"X",
-				lines(
-						"class X<@Reify(String.class) T> {   ",
-						"    String classT() { return null; }",
-						"}                                   "
-				)
-		);
-		JavaFileObject X$String = generatedSource(
-				"X$String",
-				lines(
-						"public class X$String extends X<String> {",
-						"}                                        "
-				)
-		);
-		
-		assertCompilesAndGenerates(X, X$String);
-	}
-	
-	@Test
-	public void nonAbstractClassMethodOnClassComplex() {
-		JavaFileObject X = inputSource(
-				"X",
-				lines(
-						"class X<@Reify(String.class) T extends CharSequence> {",
-						"    Class<? super T> classT() {                       ",
-						"        return CharSequence.class;                    ",
-						"    }                                                 ",
-						"}                                                     "
-				)
-		);
-		JavaFileObject X$String = generatedSource(
-				"X$String",
-				lines(
-						"public class X$String extends X<String> {",
-						"}                                        "
-				)
-		);
-		
-		assertCompilesAndGenerates(X, X$String);
-	}
-	
 	// TODO Add test with indirectly inherited abstract methods, incl.
 	//      - collisions (might not be our problem, though)
 	//      - overloading (for 'newInstance' only).
 	//      - both interface and superclass
 	//      - abstract but also implemented.
+	//      - class remains abstract if there are extra abstract methods.
 	
 }

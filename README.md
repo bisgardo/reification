@@ -11,14 +11,16 @@ section.
 
 The generated types are always `public` and contained in their very own source file.
 
-The processor [doesn't yet] supports auto-implementation of the followingly named [and/or suitably annotated] abstract
-methods, if they are present:
+The processor supports auto-implementation of the followingly named [TODO and/or suitably annotated] abstract methods,
+if they are present:
 
 *   `T newT(? arg_1, ..., ? arg_n)`: Create a new instance of the reified type `T` by passing the (arbitrarily typed)
-    parameters `arg_1` through `arg_n` to a suitable constructor of `T`. [TODO The method only declares throwing the
-    exceptions that the constructor declares to throw.]
-
+    parameters `arg_1` through `arg_n` to a suitable constructor of `T`.
 *   `T classT()`: Return the `Class`-object for the reified type `T`.
+
+[TODO In order to limit possible surprises and inconsistencies (one may rename supertypes' type variables), only methods
+defined directly within the reifying class are auto-implemented. Note that this is not a limitation, as one can always
+redefine inherited abstract methods.]
 
 ## Limitations
 
@@ -28,14 +30,9 @@ non-local classes at some later time.
 The current implementation is also quite incomplete, and the following features haven't been implemented yet:
 
 *   Reification of type parameters on static inner classes.
-
 *   Reification of type parameters on final classes.
-
 *   Reification of type that defines more than one type parameter.
-
 *   Reification of primitive types.
-
-*   Auto-implementation of methods.
 
 All these constraints are intended to be lifted later on and other features may be added as well.
 
@@ -63,7 +60,9 @@ by generating the class
 If `X` contains abstract methods, then `X$String` will be abstract. If `X` were an interface, then so would `X$String`
 be.
 
-The generated class will reside in the same package as the input class. 
+The generated class will reside in the same package as the input class.
+
+[TODO Example of auto-instantiated method]
 
 ## Future ideas
 

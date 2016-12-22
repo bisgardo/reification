@@ -107,7 +107,7 @@ public class ReificationProcessor extends AbstractProcessor {
 	// TODO Consider only reporting errors from this class and rely on exceptions elsewhere.
 	
 	private void process(ClassSymbol typeElement) {
-		SourceGenerator sourceGenerator = new SourceGenerator(types, messager, typeElement);
+		TypeGenerator typeGenerator = new TypeGenerator(types, messager, typeElement);
 		
 		if (typeElement.getModifiers().contains(FINAL)) {
 			// TODO Support reification of final classes: Implement in two iterations:
@@ -149,9 +149,9 @@ public class ReificationProcessor extends AbstractProcessor {
 		String typeName = typeElement.getSimpleName().toString();
 		String generatedTypeName = generatedTypeName(typeName, reifiedTypeArguments);
 		
-		TypeSpec.Builder javaFileBuilder = sourceGenerator.generateSource(reifiedTypeArguments, generatedTypeName, typeElement);
+		TypeSpec.Builder javaFileBuilder = typeGenerator.generateType(reifiedTypeArguments, generatedTypeName);
 		if (javaFileBuilder == null) {
-			// Error has been reported to `messager` from within `sourceGenerator`.
+			// Error has been reported to `messager` from within `typeGenerator`.
 			return;
 		}
 		

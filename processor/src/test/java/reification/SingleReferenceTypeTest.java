@@ -10,7 +10,7 @@ import static reification.TestHelper.*;
 public class SingleReferenceTypeTest {
 	
 	@Test
-	public void nonAbstractClass() {
+	public void emptyClass() {
 		JavaFileObject X = inputSource("X", "class X<@Reify(String.class) T> {}");
 		JavaFileObject X$String = generatedSource("X$String", "public class X$String extends X<String> {}");
 		
@@ -18,17 +18,9 @@ public class SingleReferenceTypeTest {
 	}
 	
 	@Test
-	public void abstractClassWithoutAbstractMethods() {
+	public void classWithoutAbstractMethods() {
 		JavaFileObject X = inputSource("X", "abstract class X<@Reify(String.class) T> {}");
 		JavaFileObject X$String = generatedSource("X$String", "public class X$String extends X<String> {}");
-		
-		assertCompilesAndGenerates(X, X$String);
-	}
-	
-	@Test
-	public void abstractClassWithUnknownAbstractMethods() {
-		JavaFileObject X = inputSource("X", "abstract class X<@Reify(String.class) T> { abstract int f(); }");
-		JavaFileObject X$String = generatedSource("X$String", "public abstract class X$String extends X<String> {}");
 		
 		assertCompilesAndGenerates(X, X$String);
 	}
